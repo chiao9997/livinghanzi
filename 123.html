@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>有生命的漢字小學堂 - 雙階圖文與褪圖識字挑戰版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #FFFDF7;
+      color: #1E293B;
+    }
+    .target-char {
+      color: #E11D48;
+      font-weight: 900;
+      text-decoration: underline;
+      text-decoration-color: #FDA4AF;
+      text-underline-offset: 6px;
+      text-decoration-thickness: 3px;
+    }
+    .clickable-char {
+      display: inline-block;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 0 2px;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    .clickable-char:hover {
+      background-color: #FEF3C7;
+      transform: scale(1.1);
+    }
+    .card-shadow {
+      box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.12), 0 8px 10px -6px rgba(245, 158, 11, 0.08);
+    }
+    .drop-zone-active {
+      border-color: #E11D48 !important;
+      background-color: #FFF1F2 !important;
+      transform: scale(1.02);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.94); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes shakeCard {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+    .animate-shake {
+      animation: shakeCard 0.4s ease-in-out;
+      border-color: #F43F5E !important;
+      background-color: #FFF1F2 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 頂部導航列 -->
+  <header class="bg-white border-b-2 border-amber-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- 品牌 LOGO 與名稱 -->
+      <div class="flex items-center gap-3">
+        <div onclick="document.getElementById('custom-logo-input').click()" title="點擊可上傳原始 logo-02.jpg 替換標誌" class="w-14 h-14 rounded-2xl bg-white border-2 border-emerald-200 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer hover:border-emerald-500 transition shrink-0 p-1">
+          <img id="brand-logo-img" src="" alt="有生命的漢字 LOGO" class="w-full h-full object-contain" />
+        </div>
+        <input type="file" id="custom-logo-input" accept="image/*" class="hidden" onchange="handleCustomLogoUpload(event)" />
+
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-xl font-black text-slate-800 tracking-tight">有生命的漢字小學堂</h1>
+            <span id="course-badge" class="px-3 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-300">
+              六、小女生
+            </span>
+          </div>
+          <p class="text-xs text-emerald-800 font-bold mt-0.5">LIVING CHINESE CHARACTERS・無注音三層階梯識字・雙階配對挑戰</p>
+        </div>
+      </div>
+
+      <!-- 工具列按鈕 -->
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="saved-courses-select" onchange="switchSavedCourse(this.value)" class="px-3 py-2 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 text-sm font-bold focus:outline-none focus:border-amber-400 max-w-[165px]">
+          <option value="">📚 已存課程書櫃</option>
+        </select>
+
+        <button onclick="openAutoGenModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black flex items-center gap-1.5 transition shadow-sm">
+          <span>✨</span><span>一鍵產生新課</span>
+        </button>
+
+        <button onclick="openBatchEditor()" class="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-sm font-bold flex items-center gap-1 transition">
+          <span>📝</span><span>微調與貼圖</span>
+        </button>
+
+        <button onclick="document.getElementById('import-file-input').click()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-sm font-bold flex items-center gap-1 transition">
+          <span>📂</span><span>匯入</span>
+        </button>
+        <input type="file" id="import-file-input" accept=".html" class="hidden" onchange="importCourseFile(event)" />
+
+        <button onclick="downloadStandaloneHtml()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-black flex items-center gap-1.5 transition shadow-sm" title="將目前課程、品牌 LOGO 與所有生成圖片打包成獨立網頁檔，可傳給任何人離線使用">
+          <span>💾</span><span>匯出分享網頁</span>
+        </button>
+
+        <div class="flex bg-amber-100 p-1 rounded-xl border border-amber-300">
+          <button id="tab-learn" onclick="switchMode('learn')" class="px-3 py-1.5 rounded-lg text-sm font-black bg-amber-500 text-white shadow-sm transition">
+            🎓 三層識字
+          </button>
+          <button id="tab-quiz" onclick="switchMode('quiz')" class="px-3 py-1.5 rounded-lg text-sm font-bold text-amber-900 hover:bg-amber-200/60 transition">
+            🧩 雙階配對測驗
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容區 -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+
+    <!-- ==================== 模式一：三層階梯識字 ==================== -->
+    <section id="view-learn" class="space-y-5">
+      <div class="bg-white rounded-3xl p-4 border-2 border-amber-200 card-shadow flex flex-wrap items-center justify-between gap-4">
+        <div id="char-selector-bar" class="flex flex-wrap items-center gap-2"></div>
+
+        <div class="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <button id="layer-btn-1" onclick="switchLayer(1)" class="px-3.5 py-2 rounded-xl text-sm font-black bg-sky-500 text-white shadow-sm transition">
+            第 1 層：認字與語詞
+          </button>
+          <button id="layer-btn-2" onclick="switchLayer(2)" class="px-3.5 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200/70 transition">
+            第 2 層：語詞與造句
+          </button>
+          <button id="layer-btn-3" onclick="switchLayer(3)" class="px-3.5 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200/70 transition">
+            🖌️ 第 3 層：筆順與手寫
+          </button>
+        </div>
+      </div>
+
+      <!-- 第 1 層 & 第 2 層 雙欄圖文互動卡片 -->
+      <div id="layer-1-2-card" class="bg-white rounded-3xl p-6 border-2 border-amber-200 card-shadow grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch animate-pop">
+        <div class="lg:col-span-7 flex flex-col justify-between space-y-5">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span id="layer-tag" class="px-3.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black border border-sky-200">
+                📚 第 1 層：認識生字與代表語詞
+              </span>
+              <span id="progress-badge" class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
+                進度：1 / 6
+              </span>
+            </div>
+
+            <div class="bg-amber-50/70 border-2 border-amber-200 rounded-3xl p-6 flex items-center gap-4 min-h-[160px]">
+              <button onclick="speakCurrentSentence()" title="朗讀整句" class="shrink-0 w-14 h-14 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-2xl flex items-center justify-center shadow-md transition">
+                🔊
+              </button>
+              <div id="sentence-display" class="text-3xl sm:text-4xl font-bold text-slate-800 leading-relaxed tracking-wide break-words"></div>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onclick="speakCurrentSentence()" class="py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-base flex items-center justify-center gap-2 shadow-sm transition">
+                <span>🔊</span><span>聽老師唸全部</span>
+              </button>
+              <button id="btn-record" onclick="toggleRecording()" class="py-3.5 px-5 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-black text-base flex items-center justify-center gap-2 shadow-sm transition">
+                <span>🎙️</span><span id="record-btn-label">自己唸唸看</span>
+              </button>
+            </div>
+            <div id="audio-playback-bar" class="hidden bg-white border border-rose-200 rounded-xl p-2.5 flex items-center justify-between gap-3">
+              <span class="text-xs font-bold text-rose-700">🎉 錄音完成！聽聽看自己的發音：</span>
+              <audio id="recorded-audio" controls class="h-8 max-w-[220px]"></audio>
+            </div>
+            <p class="text-xs text-center text-slate-500 font-medium">
+              💡 點擊任何單字可聽發音；右側圖框可點「AI 重繪」或直接按 <kbd class="px-1.5 py-0.5 bg-white border rounded text-slate-700">Ctrl+V</kbd> 貼圖
+            </p>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col justify-between space-y-3">
+          <div id="main-image-dropzone" onclick="document.getElementById('custom-img-input').click()" title="點擊上傳照片、拖曳圖片檔至此，或直接按 Ctrl+V 貼上" class="relative flex-1 min-h-[270px] rounded-3xl border-2 border-dashed border-amber-300 bg-amber-50/40 overflow-hidden flex items-center justify-center cursor-pointer group hover:border-amber-500 transition">
+            <img id="illustration-img" src="" alt="生字教學插畫" class="w-full h-full object-contain max-h-[310px] p-2 transition duration-200 group-hover:scale-[1.02]" />
+            <div id="img-loading-overlay" class="hidden absolute inset-0 bg-white/85 backdrop-blur-xs flex flex-col items-center justify-center gap-2.5 p-4 text-center">
+              <div class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              <p class="text-sm font-black text-amber-900">🎨 AI 正在繪製兒童繪本插畫...</p>
+              <p class="text-xs text-slate-500">約需 3～6 秒，完成後自動離線存檔</p>
+            </div>
+            <div class="absolute bottom-2 right-2 bg-black/65 text-white text-[11px] px-3 py-1 rounded-full opacity-90 group-hover:opacity-100 transition">
+              📷 點擊換圖 / 拖曳 / Ctrl+V
+            </div>
+          </div>
+          <input type="file" id="custom-img-input" accept="image/*" class="hidden" onchange="handleManualImageUpload(event)" />
+
+          <div class="flex items-center justify-between gap-2">
+            <button onclick="regenerateCurrentCharAiImage()" class="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition">
+              <span>🎨</span><span>AI 重繪本張插畫</span>
+            </button>
+            <button onclick="document.getElementById('custom-img-input').click()" class="py-2.5 px-3 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-900 border border-sky-300 text-xs font-bold flex items-center justify-center gap-1 transition">
+              <span>🖼️</span><span>上傳照片</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第 3 層：繁體筆順與手寫練習卡片 -->
+      <div id="layer-3-card" class="hidden bg-white rounded-3xl p-6 border-2 border-amber-200 card-shadow animate-pop">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <span class="px-3.5 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-black border border-rose-200">
+              🖌️ 第 3 層：繁體中文標準筆順演示與手寫練習
+            </span>
+            <h2 class="text-xl font-black text-slate-800 mt-2">
+              練習生字：<span id="writer-char-title" class="text-rose-600 text-3xl ml-1">非</span>
+            </h2>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="animateStrokeOrder()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-black shadow-sm transition">
+              ▶️ 播放筆順動畫
+            </button>
+            <button onclick="startStrokeQuiz()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black shadow-sm transition">
+              ✍️ 開始手寫描紅測驗
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div class="flex flex-col items-center bg-amber-50/60 border-2 border-amber-200 rounded-3xl p-5">
+            <p class="text-xs font-bold text-amber-800 mb-3">👀 先看筆順示範（田字格）</p>
+            <div id="hanzi-demo-target" class="bg-white rounded-2xl border-2 border-amber-300 shadow-inner"></div>
+          </div>
+          <div class="flex flex-col items-center bg-sky-50/60 border-2 border-sky-200 rounded-3xl p-5">
+            <p class="text-xs font-bold text-sky-800 mb-3">🖐️ 用手指或滑鼠跟著筆順寫寫看</p>
+            <div id="hanzi-quiz-target" class="bg-white rounded-2xl border-2 border-sky-300 shadow-inner cursor-crosshair"></div>
+            <p id="stroke-quiz-feedback" class="text-sm font-bold text-emerald-700 mt-3 h-5"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部上下步導航 -->
+      <div class="flex items-center justify-between pt-1">
+        <button onclick="prevStep()" class="px-5 py-3 rounded-2xl bg-white hover:bg-amber-50 text-slate-700 border-2 border-amber-200 font-bold text-sm transition shadow-xs">
+          ⬅️ 上一個字
+        </button>
+        <button id="btn-next-step" onclick="nextStep()" class="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-black text-base shadow-md transition">
+          進入第 2 層：語詞與造句 ➡️
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== 模式二：雙階配對測驗（第1關圖文配對 / 第2關褪圖挑戰） ==================== -->
+    <section id="view-quiz" class="hidden space-y-6 animate-pop">
+      <div class="bg-white rounded-3xl p-6 border-2 border-amber-200 card-shadow space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100 pb-4">
+          <div>
+            <h2 id="quiz-main-title" class="text-2xl font-black text-slate-800">🧩 第 1 關：看圖辨字配對</h2>
+            <p id="quiz-main-subtitle" class="text-sm text-slate-500 font-medium mt-0.5">先點選上方一個生字，再點擊下方對應的繪本插畫與挖空語詞卡！</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-300">
+              <button id="quiz-stage-btn-1" onclick="setQuizStage(1)" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black bg-sky-600 text-white shadow-xs transition">
+                🖼️ 第 1 關：圖文配對
+              </button>
+              <button id="quiz-stage-btn-2" onclick="setQuizStage(2)" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-200 transition">
+                📝 第 2 關：褪圖挑戰
+              </button>
+            </div>
+
+            <span id="quiz-score-badge" class="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-sm border border-emerald-300">
+              已完成：0 / 6
+            </span>
+            <button onclick="initQuiz()" class="px-3.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-sm transition">
+              🔄 重新洗牌
+            </button>
+          </div>
+        </div>
+
+        <!-- 即時回饋提示橫幅 -->
+        <div id="quiz-feedback-banner" class="rounded-2xl px-5 py-3.5 bg-indigo-50 border-2 border-indigo-200 text-indigo-900 font-black text-base flex flex-wrap items-center justify-between gap-3 transition">
+          <span id="quiz-feedback-text">👆 第一步：請先點選下方一個生字，再找出對應的插畫！</span>
+          <div class="flex items-center gap-2">
+            <button id="btn-retry-current" onclick="retryWrongSelection()" class="hidden px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-black shadow-xs transition shrink-0">
+              🔄 再試一次
+            </button>
+            <button id="btn-advance-stage2" onclick="setQuizStage(2)" class="hidden px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-black shadow-md transition shrink-0">
+              🚀 進入第 2 關：褪圖挑戰 ➡️
+            </button>
+          </div>
+        </div>
+
+        <!-- 第一步：生字按鈕區 -->
+        <div>
+          <p class="text-xs font-black text-indigo-700 mb-2.5">第一步：請點選一個生字</p>
+          <div id="quiz-char-pool" class="flex flex-wrap gap-2.5"></div>
+        </div>
+
+        <!-- 第二步：配對卡片區 -->
+        <div>
+          <p id="quiz-step2-label" class="text-xs font-black text-indigo-700 mb-2.5">第二步：請點擊與該生字相符的插畫與語詞卡</p>
+          <div id="quiz-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 彈窗 1：一鍵自動產生新課程 ==================== -->
+  <div id="modal-auto-gen" class="hidden fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 border-2 border-amber-300 shadow-2xl space-y-4 my-auto animate-pop">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+            <span>✨</span><span>貼上課文一鍵產生課程（免 API Key・自動排隊 AI 生圖）</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">系統會自動過濾注音、擷取語詞與課文原句，並自動控制間隔排隊繪製專屬插畫！</p>
+        </div>
+        <button id="btn-close-autogen" onclick="closeAutoGenModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 mb-1">1. 課程標題</label>
+          <input id="auto-title" type="text" placeholder="例如：七、勇敢的小樹苗" class="w-full px-4 py-2.5 rounded-2xl border-2 border-amber-200 focus:outline-none focus:border-amber-500 font-bold text-slate-800" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 mb-1">2. 本課生字清單（直接貼上整串或用空格隔開皆可）</label>
+          <input id="auto-chars" type="text" placeholder="例如：勇 敢 樹 苗 陽 光" class="w-full px-4 py-2.5 rounded-2xl border-2 border-amber-200 focus:outline-none focus:border-rose-400 font-black text-rose-600 text-lg tracking-widest" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 mb-1">3. 貼上完整課文（含注音符號或空白也沒關係，系統會自動清理）</label>
+          <textarea id="auto-passage" rows="5" placeholder="直接把電子書或 Word 裡的課文貼在這裡..." class="w-full px-4 py-3 rounded-2xl border-2 border-amber-200 focus:outline-none focus:border-amber-500 text-sm leading-relaxed text-slate-700"></textarea>
+        </div>
+      </div>
+
+      <div id="auto-gen-progress-box" class="hidden bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2">
+        <div class="flex items-center justify-between text-xs font-black text-amber-900">
+          <span id="auto-gen-status-text">🎨 正在連接免金鑰 AI 繪圖引擎...</span>
+          <span id="auto-gen-counter">0 / 0</span>
+        </div>
+        <div class="w-full h-3 bg-amber-200 rounded-full overflow-hidden">
+          <div id="auto-gen-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <button id="btn-gen-text-only" onclick="executeAutoGenerate(false)" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+          📝 僅產生文字（稍後手動貼圖）
+        </button>
+        <div class="flex gap-2">
+          <button id="btn-cancel-autogen" onclick="closeAutoGenModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold">取消</button>
+          <button id="btn-gen-with-ai" onclick="executeAutoGenerate(true)" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-black shadow-md transition flex items-center gap-1.5">
+            <span>🎨</span><span>一鍵產生文字 ＋ 自動排隊 AI 繪圖</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 2：批次微調與貼圖編輯器 ==================== -->
+  <div id="modal-batch-editor" class="hidden fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-5xl w-full p-5 sm:p-6 border-2 border-amber-300 shadow-2xl space-y-4 my-auto max-h-[92vh] flex flex-col animate-pop">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 shrink-0">
+        <div>
+          <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+            <span>📝</span><span>本課生字、語詞與插畫微調表</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">點擊圖片框可上傳照片，或直接拖曳圖片進入 / 按 <kbd class="px-1 bg-slate-100 border rounded">Ctrl+V</kbd> 貼上剪貼簿圖片！</p>
+        </div>
+        <button onclick="closeBatchEditor()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+      </div>
+
+      <div class="bg-amber-50/70 p-3 rounded-2xl border border-amber-200 shrink-0">
+        <label class="block text-xs font-black text-slate-700 mb-1">課程標題</label>
+        <input id="editor-course-title" type="text" class="w-full px-3.5 py-2 rounded-xl border-2 border-amber-300 bg-white font-bold text-slate-800 text-sm focus:outline-none focus:border-amber-500" />
+      </div>
+
+      <div class="flex-1 overflow-y-auto border border-slate-200 rounded-2xl">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-100 sticky top-0 z-10 text-xs font-black text-slate-700 border-b border-slate-200">
+            <tr>
+              <th class="py-2.5 px-3 w-16 text-center">生字</th>
+              <th class="py-2.5 px-3 w-36">代表語詞</th>
+              <th class="py-2.5 px-3">第 2 層情境造句</th>
+              <th class="py-2.5 px-3 w-52 text-center">插畫（AI生圖 / 拖曳 / 貼上）</th>
+              <th class="py-2.5 px-2 w-12 text-center">刪除</th>
+            </tr>
+          </thead>
+          <tbody id="editor-rows-tbody" class="divide-y divide-slate-200 text-sm"></tbody>
+        </table>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200 shrink-0">
+        <button onclick="addSingleEmptyRow()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition">
+          ＋ 增加一個生字列
+        </button>
+        <div class="flex items-center gap-2.5">
+          <button onclick="closeBatchEditor()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold">取消</button>
+          <button onclick="saveBatchEditor()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black shadow-md transition">
+            ✅ 儲存修改並更新畫面
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="row-img-file-input" accept="image/*" class="hidden" onchange="handleRowFileSelected(event)" />
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-bold animate-pop"></div>
+
+  <script>
+    // ==================== 品牌專屬內嵌 LOGO（離線永不遺失） ====================
+    const DEFAULT_LIVING_HANZI_LOGO = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+        <rect width="240" height="240" rx="28" fill="#FFFFFF"/>
+        <!-- 綠色「有」字筆畫 -->
+        <path d="M52 54 Q115 48 182 36 Q190 35 186 44 Q180 51 116 58 Q66 64 52 62 Q45 60 52 54 Z" fill="#6EA043"/>
+        <path d="M116 14 Q124 14 123 24 Q118 76 74 124 Q65 133 60 128 Q56 123 64 114 Q102 72 108 22 Q110 14 116 14 Z" fill="#6EA043"/>
+        <path d="M98 76 Q105 76 105 84 L105 148 Q105 156 98 156 Q91 156 91 148 L91 84 Q91 76 98 76 Z" fill="#6EA043"/>
+        <path d="M98 78 Q128 72 146 68 Q158 66 158 80 Q158 98 144 108 Q132 116 112 114 Q104 113 106 106 Q108 100 116 101 Q130 102 138 95 Q144 89 144 82 Q144 78 136 80 L98 88 Z" fill="#6EA043"/>
+        <path d="M104 92 Q122 90 134 88 Q139 88 139 93 Q139 97 132 98 L104 101 Z" fill="#6EA043"/>
+        <!-- 大地土色「月」下筆畫 -->
+        <path d="M136 106 Q152 104 156 122 Q160 144 138 164 L112 164 Q116 146 130 134 Q138 126 132 114 Q129 108 136 106 Z" fill="#B68346"/>
+        <!-- 黑色大地弧線 -->
+        <path d="M44 176 Q120 154 196 176 Q198 179 192 179 Q120 163 48 179 Q42 179 44 176 Z" fill="#111111"/>
+        <!-- 品牌中英文名稱 -->
+        <text x="120" y="206" font-size="25" font-weight="900" fill="#111111" text-anchor="middle" font-family="sans-serif" letter-spacing="2">有生命的漢字</text>
+        <text x="120" y="226" font-size="11.5" font-weight="700" fill="#222222" text-anchor="middle" font-family="sans-serif" letter-spacing="0.8">LIVING CHINESE CHARACTERS</text>
+      </svg>
+    `);
+
+    const STORAGE_KEY_LOGO = "living_hanzi_custom_logo_v1";
+
+    function loadBrandLogo() {
+      const imgEl = document.getElementById("brand-logo-img");
+      if (!imgEl) return;
+      if (EMBEDDED_CUSTOM_LOGO && EMBEDDED_CUSTOM_LOGO.trim().length > 0) {
+        imgEl.src = EMBEDDED_CUSTOM_LOGO;
+        return;
+      }
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_LOGO);
+        imgEl.src = saved || DEFAULT_LIVING_HANZI_LOGO;
+      } catch (e) {
+        imgEl.src = DEFAULT_LIVING_HANZI_LOGO;
+      }
+    }
+
+    async function handleCustomLogoUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const dataUrl = await readFileAsCompressedDataUrl(file);
+      document.getElementById("brand-logo-img").src = dataUrl;
+      try { localStorage.setItem(STORAGE_KEY_LOGO, dataUrl); } catch (e) {}
+      SoundFX.success();
+      showToast("✅ 已更新為您的專屬品牌 LOGO 並自動存檔！");
+      event.target.value = "";
+    }
+
+    // ==================== 音效與語音回饋合成器 ====================
+    const SoundFX = {
+      ctx: null,
+      init() {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      },
+      playTone(freq, type = 'sine', duration = 0.12, vol = 0.15) {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      },
+      click() { this.playTone(520, 'sine', 0.08, 0.12); },
+      success() {
+        this.playTone(523.25, 'triangle', 0.14, 0.2);
+        setTimeout(() => this.playTone(659.25, 'triangle', 0.14, 0.2), 100);
+        setTimeout(() => this.playTone(783.99, 'triangle', 0.16, 0.22), 200);
+        setTimeout(() => this.playTone(1046.5, 'triangle', 0.3, 0.24), 310);
+      },
+      error() {
+        this.playTone(240, 'sawtooth', 0.16, 0.14);
+        setTimeout(() => this.playTone(190, 'sawtooth', 0.24, 0.14), 140);
+      }
+    };
+
+    function speakFeedback(text, delayMs = 260) {
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = "zh-TW";
+          utter.rate = 0.95;
+          utter.pitch = 1.08;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {}
+      }, delayMs);
+    }
+
+    // ==================== 乾淨不洩題備援佔位圖 ====================
+    function makeCleanPlaceholderSvg(char, bg1 = "#FEF3C7", bg2 = "#FDE68A") {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+        <defs>
+          <linearGradient id="g_${char.charCodeAt(0)}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="${bg1}"/>
+            <stop offset="100%" stop-color="${bg2}"/>
+          </linearGradient>
+        </defs>
+        <rect width="400" height="300" rx="28" fill="url(#g_${char.charCodeAt(0)})"/>
+        <circle cx="200" cy="135" r="64" fill="rgba(255,255,255,0.88)"/>
+        <text x="200" y="160" font-size="64" font-weight="900" fill="#D97706" text-anchor="middle" font-family="sans-serif">${char}</text>
+        <text x="200" y="242" font-size="16" font-weight="bold" fill="#92400E" text-anchor="middle" font-family="sans-serif">點下方「AI 重繪」或 Ctrl+V 貼圖</text>
+      </svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    // ==================== 免 API Key 真實 AI 繪本生圖引擎 ====================
+    const WORD_VISUAL_HINTS = {
+      "洗澡": "a cute happy kid taking a warm bubbly bath in a bathtub with a yellow rubber duck, soap bubbles",
+      "害怕": "a cute timid little child hiding slightly behind a teddy bear looking shy and scared, soft comforting light",
+      "興奮": "a cheerful excited kid jumping joyfully with arms raised and sparkling stars around",
+      "非常": "a happy child giving two big thumbs up with a bright sunny smile and colorful stars",
+      "關係": "two best friend kids holding hands smiling together in a sunny park",
+      "應該": "a thoughtful cute student nodding with a glowing lightbulb idea above head",
+      "金球": "a bright golden sun shining like a glowing golden ball in a clear blue sky",
+      "練習": "elementary school kids practicing morning exercises happily on a sunny school playground",
+      "努力": "a determined cute student studying hard and wiping sweat with a proud smile",
+      "秒針": "a colorful round wall clock with a fast-moving red second hand ticking",
+      "操場": "a sunny elementary school playground with a red running track, green grass and white clouds",
+      "搖擺": "colorful sea anemones swaying gently in a sunny underwater coral garden",
+      "懷抱": "a cute little orange clownfish resting safely cuddled inside soft pink sea anemone arms",
+      "刺針": "a brave pink sea anemone shooting tiny glowing protective darts in the ocean",
+      "烏鴉": "a clever black crow dropping pebbles into a glass water pitcher on a sunny day"
+    };
+
+    function buildVisualSceneDescription(char, word, sentence) {
+      if (WORD_VISUAL_HINTS[word]) return WORD_VISUAL_HINTS[word];
+      for (const key of Object.keys(WORD_VISUAL_HINTS)) {
+        if (word.includes(key) || sentence.includes(key)) return WORD_VISUAL_HINTS[key];
+      }
+      const cleanCtx = (sentence || word || char).replace(/[「」『』，。！？、；：]/g, " ").trim();
+      return `a warm, expressive children's picture book scene illustrating the concept of "${word}" (${cleanCtx}), featuring cute expressive characters and clear visual storytelling`;
+    }
+
+    async function generateFreeAiStorybookImage(char, word, sentence) {
+      const sceneDesc = buildVisualSceneDescription(char, word, sentence);
+      const fullPrompt = `Cute Taiwanese children's picture book illustration, soft watercolor and gouache style, warm bright pastel colors, clear focal subject, no text, no letters, no Chinese characters, no watermark: ${sceneDesc}`;
+      const encodedPrompt = encodeURIComponent(fullPrompt);
+      const seed = Math.floor(Math.random() * 999999);
+
+      const candidateUrls = [
+        `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=384&seed=${seed}&model=flux&nologo=true`,
+        `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=384&seed=${seed + 1}&model=turbo&nologo=true`
+      ];
+
+      for (const url of candidateUrls) {
+        try {
+          const dataUrl = await fetchImageAndCompressToBase64(url, 22000);
+          if (dataUrl) return dataUrl;
+        } catch (err) {}
+      }
+      throw new Error("AI 繪圖冷卻中或網路忙碌，請稍候 45 秒再點一次重繪");
+    }
+
+    function fetchImageAndCompressToBase64(url, timeoutMs = 22000) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        const timer = setTimeout(() => {
+          img.src = "";
+          reject(new Error("timeout"));
+        }, timeoutMs);
+
+        img.onload = () => {
+          clearTimeout(timer);
+          try {
+            const maxW = 480;
+            const scale = Math.min(1, maxW / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.84));
+          } catch (canvasErr) {
+            resolve(url);
+          }
+        };
+
+        img.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error("load_error"));
+        };
+
+        img.src = url;
+      });
+    }
+
+    // ==================== 預設課程資料 ====================
+    /* === LESSON_DATA_START === */
+    const EMBEDDED_EXPORT_BASE64 = "";
+    const EMBEDDED_CUSTOM_LOGO = "";
+    let currentCourseTitle = "六、小女生";
+    let lessonData = [
+      {
+        char: "非",
+        word: "非常",
+        layer1Text: "非，非常的非",
+        layer2Text: "她是一個非常可愛又害羞的小女生。",
+        layer1Img: makeCleanPlaceholderSvg("非", "#E0F2FE", "#BAE6FD"),
+        layer2Img: makeCleanPlaceholderSvg("非", "#E0F2FE", "#BAE6FD")
+      },
+      {
+        char: "關",
+        word: "關係",
+        layer1Text: "關，關係的關",
+        layer2Text: "沒關係，我們大家都會一起陪著你。",
+        layer1Img: makeCleanPlaceholderSvg("關", "#FEF3C7", "#FDE68A"),
+        layer2Img: makeCleanPlaceholderSvg("關", "#FEF3C7", "#FDE68A")
+      },
+      {
+        char: "澡",
+        word: "洗澡",
+        layer1Text: "澡，洗澡的澡",
+        layer2Text: "每天回家後，我都會自己洗個舒服的熱水澡。",
+        layer1Img: makeCleanPlaceholderSvg("澡", "#DCFCE7", "#BBF7D0"),
+        layer2Img: makeCleanPlaceholderSvg("澡", "#DCFCE7", "#BBF7D0")
+      },
+      {
+        char: "怕",
+        word: "害怕",
+        layer1Text: "怕，害怕的怕",
+        layer2Text: "剛來到新班級時，她心裡有一點害怕。",
+        layer1Img: makeCleanPlaceholderSvg("怕", "#FCE7F3", "#FBCFE8"),
+        layer2Img: makeCleanPlaceholderSvg("怕", "#FCE7F3", "#FBCFE8")
+      },
+      {
+        char: "奮",
+        word: "興奮",
+        layer1Text: "奮，興奮的奮",
+        layer2Text: "聽到明天要去戶外教學，大家都興奮得睡不著。",
+        layer1Img: makeCleanPlaceholderSvg("奮", "#FFEDD5", "#FED7AA"),
+        layer2Img: makeCleanPlaceholderSvg("奮", "#FFEDD5", "#FED7AA")
+      },
+      {
+        char: "應",
+        word: "應該",
+        layer1Text: "應，應該的應",
+        layer2Text: "同學之間應該互相幫助、彼此鼓勵。",
+        layer1Img: makeCleanPlaceholderSvg("應", "#F3E8FF", "#E9D5FF"),
+        layer2Img: makeCleanPlaceholderSvg("應", "#F3E8FF", "#E9D5FF")
+      }
+    ];
+    /* === LESSON_DATA_END === */
+
+    // ==================== 狀態管理與本機記憶 ====================
+    const STORAGE_KEY_COURSES = "happy_literacy_courses_v6";
+    const STORAGE_KEY_ACTIVE = "happy_literacy_active_title_v6";
+
+    let currentCharIdx = 0;
+    let currentLayer = 1;
+    let demoWriter = null;
+    let quizWriter = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    let draftRows = [];
+    let focusedEditorRowIdx = 0;
+    let targetRowUploadIdx = 0;
+
+    let quizStage = 1;
+    let selectedQuizChar = null;
+    let matchedChars = new Set();
+    let wrongCardChar = null;
+    let shuffledQuizCards = [];
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadBrandLogo();
+      if (EMBEDDED_EXPORT_BASE64 && EMBEDDED_EXPORT_BASE64.trim().length > 0) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(escape(atob(EMBEDDED_EXPORT_BASE64))));
+          if (decoded && decoded.title && Array.isArray(decoded.data)) {
+            currentCourseTitle = decoded.title;
+            lessonData = decoded.data;
+          }
+        } catch (e) {}
+      } else {
+        loadFromLocalStorage();
+      }
+
+      setupMainDropzone();
+      refreshCourseDropdown();
+      renderLearnView();
+    });
+
+    function showToast(msg, duration = 3000) {
+      const box = document.getElementById("toast-box");
+      box.textContent = msg;
+      box.classList.remove("hidden");
+      clearTimeout(box._timer);
+      box._timer = setTimeout(() => box.classList.add("hidden"), duration);
+    }
+
+    function saveCurrentCourseToStorage() {
+      if (EMBEDDED_EXPORT_BASE64 && EMBEDDED_EXPORT_BASE64.trim().length > 0) return;
+      try {
+        const all = JSON.parse(localStorage.getItem(STORAGE_KEY_COURSES) || "{}");
+        all[currentCourseTitle] = { title: currentCourseTitle, updatedAt: Date.now(), data: lessonData };
+        localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(all));
+        localStorage.setItem(STORAGE_KEY_ACTIVE, currentCourseTitle);
+        refreshCourseDropdown();
+      } catch (e) {}
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const all = JSON.parse(localStorage.getItem(STORAGE_KEY_COURSES) || "{}");
+        const activeTitle = localStorage.getItem(STORAGE_KEY_ACTIVE);
+        if (activeTitle && all[activeTitle] && Array.isArray(all[activeTitle].data) && all[activeTitle].data.length > 0) {
+          currentCourseTitle = all[activeTitle].title;
+          lessonData = all[activeTitle].data;
+        }
+      } catch (e) {}
+    }
+
+    function refreshCourseDropdown() {
+      const sel = document.getElementById("saved-courses-select");
+      if (!sel) return;
+      let all = {};
+      try { all = JSON.parse(localStorage.getItem(STORAGE_KEY_COURSES) || "{}"); } catch (e) {}
+      all[currentCourseTitle] = { title: currentCourseTitle, data: lessonData };
+
+      sel.innerHTML = "";
+      Object.keys(all).forEach(title => {
+        const opt = document.createElement("option");
+        opt.value = title;
+        opt.textContent = "📚 " + title;
+        if (title === currentCourseTitle) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function switchSavedCourse(title) {
+      if (!title) return;
+      try {
+        const all = JSON.parse(localStorage.getItem(STORAGE_KEY_COURSES) || "{}");
+        if (all[title] && Array.isArray(all[title].data)) {
+          currentCourseTitle = all[title].title;
+          lessonData = all[title].data;
+          localStorage.setItem(STORAGE_KEY_ACTIVE, currentCourseTitle);
+          currentCharIdx = 0;
+          currentLayer = 1;
+          renderLearnView();
+          if (!document.getElementById("view-quiz").classList.contains("hidden")) initQuiz();
+          showToast(`已切換至「${currentCourseTitle}」`);
+        }
+      } catch (e) {}
+    }
+
+    // ==================== 單張 AI 重繪插畫 ====================
+    async function regenerateCurrentCharAiImage() {
+      const item = lessonData[currentCharIdx];
+      if (!item) return;
+      const overlay = document.getElementById("img-loading-overlay");
+      overlay.classList.remove("hidden");
+      try {
+        const dataUrl = await generateFreeAiStorybookImage(item.char, item.word, item.layer2Text);
+        item.layer1Img = dataUrl;
+        item.layer2Img = dataUrl;
+        saveCurrentCourseToStorage();
+        renderLearnView();
+        SoundFX.success();
+        showToast(`🎨 已為「${item.char}（${item.word}）」繪製全新 AI 繪本插畫！`);
+      } catch (err) {
+        SoundFX.error();
+        showToast(`⚠️ ${err.message}`);
+      } finally {
+        overlay.classList.add("hidden");
+      }
+    }
+
+    // ==================== 一鍵自動智慧解析課文 ＋ 自動排隊 AI 生圖 ====================
+    function openAutoGenModal() {
+      SoundFX.click();
+      document.getElementById("auto-title").value = "";
+      document.getElementById("auto-chars").value = "";
+      document.getElementById("auto-passage").value = "";
+      document.getElementById("auto-gen-progress-box").classList.add("hidden");
+      setAutoGenButtonsDisabled(false);
+      document.getElementById("modal-auto-gen").classList.remove("hidden");
+    }
+
+    function closeAutoGenModal() {
+      document.getElementById("modal-auto-gen").classList.add("hidden");
+    }
+
+    function setAutoGenButtonsDisabled(disabled) {
+      ["btn-gen-with-ai", "btn-gen-text-only", "btn-cancel-autogen", "btn-close-autogen"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+      });
+    }
+
+    const COMMON_WORDS_HINT = [
+      "非常","關係","洗澡","害怕","興奮","應該","練習","學習","努力","總指導","一小段","利用","壓住","秒針",
+      "整排","必定","通通","操場","金球","太陽","飛舞","絲帶","運動會","司令臺","神祕","心情","簡單","幫忙",
+      "陪伴","大家","烏鴉","喝水","水瓶","石頭","漸漸","升高","聰明","辦法","口渴","旁邊","發現","高興",
+      "小丑魚","海葵","搖擺","露出","懷抱","抓準","射出","刺針","疼痛","使出","有毒","欺負","負責","感動","遇到","危險"
+    ];
+
+    function cleanZhuyinAndNoise(text) {
+      return text.replace(/[\u3105-\u312Fˊˇˋ˙]+/g, "").replace(/\s+/g, " ").trim();
+    }
+
+    function extractSmartWordAndSentence(char, cleanPassage, usedWords) {
+      const sentences = cleanPassage
+        .split(/[。！？!?\n]+/)
+        .map(s => s.trim())
+        .filter(s => s.length >= 4 && s.includes(char));
+
+      let chosenSentence = sentences[0] || `我們一起學習「${char}」這個生字。`;
+      if (chosenSentence.length > 26) {
+        const subParts = chosenSentence.split(/[，、；：「」]+/).filter(p => p.includes(char));
+        if (subParts.length > 0) {
+          chosenSentence = subParts.reduce((a, b) => (b.length >= 5 && b.length <= 24) ? b : a, subParts[0]);
+        }
+      }
+      if (!/[。！？]$/.test(chosenSentence)) chosenSentence += "。";
+
+      let chosenWord = "";
+      for (const cw of COMMON_WORDS_HINT) {
+        if (cw.includes(char) && cleanPassage.includes(cw) && !usedWords.has(cw)) {
+          chosenWord = cw;
+          break;
+        }
+      }
+
+      if (!chosenWord) {
+        const stopChars = new Set(["的","了","在","是","我","你","他","她","它","們","有","不","很","都","也","就","又","把","被","讓","給","和","跟","著","過","嗎","呢","啊","吧","一","這","那"]);
+        const idx = chosenSentence.indexOf(char);
+        if (idx !== -1) {
+          const nextCh = chosenSentence[idx + 1];
+          const prevCh = chosenSentence[idx - 1];
+          if (nextCh && /[\u4e00-\u9fa5]/.test(nextCh) && !stopChars.has(nextCh)) {
+            const cand = char + nextCh;
+            if (!usedWords.has(cand)) chosenWord = cand;
+          }
+          if (!chosenWord && prevCh && /[\u4e00-\u9fa5]/.test(prevCh) && !stopChars.has(prevCh)) {
+            const cand = prevCh + char;
+            if (!usedWords.has(cand)) chosenWord = cand;
+          }
+        }
+      }
+
+      if (!chosenWord) {
+        for (const cw of COMMON_WORDS_HINT) {
+          if (cw.includes(char) && !usedWords.has(cw)) {
+            chosenWord = cw;
+            break;
+          }
+        }
+      }
+
+      if (!chosenWord) chosenWord = char;
+      usedWords.add(chosenWord);
+      return { word: chosenWord, sentence: chosenSentence };
+    }
+
+    function sleepMs(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function executeAutoGenerate(withAiImages = true) {
+      const rawTitle = cleanZhuyinAndNoise(document.getElementById("auto-title").value) || "自訂識字課程";
+      const rawChars = cleanZhuyinAndNoise(document.getElementById("auto-chars").value).replace(/[^\u4e00-\u9fa5]/g, "");
+      const chars = Array.from(new Set(rawChars.split("")));
+      const cleanPassage = cleanZhuyinAndNoise(document.getElementById("auto-passage").value);
+
+      if (chars.length === 0) {
+        showToast("⚠️ 請至少輸入一個本課生字！");
+        return;
+      }
+
+      const usedWords = new Set();
+      const palette = [
+        ["#E0F2FE", "#BAE6FD"],
+        ["#FEF3C7", "#FDE68A"],
+        ["#DCFCE7", "#BBF7D0"],
+        ["#FCE7F3", "#FBCFE8"],
+        ["#FFEDD5", "#FED7AA"],
+        ["#F3E8FF", "#E9D5FF"]
+      ];
+
+      const generated = chars.map((ch, idx) => {
+        const { word, sentence } = extractSmartWordAndSentence(ch, cleanPassage, usedWords);
+        const p = palette[idx % palette.length];
+        const placeholder = makeCleanPlaceholderSvg(ch, p[0], p[1]);
+        return {
+          char: ch,
+          word: word,
+          layer1Text: word.length > 1 ? `${ch}，${word}的${ch}` : `${ch}`,
+          layer2Text: sentence,
+          layer1Img: placeholder,
+          layer2Img: placeholder
+        };
+      });
+
+      currentCourseTitle = rawTitle;
+      lessonData = generated;
+      currentCharIdx = 0;
+      currentLayer = 1;
+      saveCurrentCourseToStorage();
+      renderLearnView();
+
+      if (!withAiImages) {
+        closeAutoGenModal();
+        SoundFX.success();
+        showToast(`✅ 已產生「${currentCourseTitle}」文字內容！`);
+        return;
+      }
+
+      setAutoGenButtonsDisabled(true);
+      const progBox = document.getElementById("auto-gen-progress-box");
+      const statusTxt = document.getElementById("auto-gen-status-text");
+      const counterTxt = document.getElementById("auto-gen-counter");
+      const bar = document.getElementById("auto-gen-progress-bar");
+      progBox.classList.remove("hidden");
+
+      let successCount = 0;
+      for (let i = 0; i < lessonData.length; i++) {
+        const item = lessonData[i];
+        counterTxt.textContent = `${i + 1} / ${lessonData.length}`;
+        bar.style.width = `${Math.round(((i + 0.5) / lessonData.length) * 100)}%`;
+
+        if (i > 0) {
+          for (let sec = 45; sec > 0; sec--) {
+            statusTxt.textContent = `⏳ 免費額度冷卻中（剩 ${sec} 秒），接著自動繪製第 ${i + 1} 張：「${item.char}（${item.word}）」...`;
+            await sleepMs(1000);
+          }
+        }
+
+        statusTxt.textContent = `🎨 AI 正在繪製第 ${i + 1} 張：「${item.char}（${item.word}）」的繪本插畫...`;
+        try {
+          const dataUrl = await generateFreeAiStorybookImage(item.char, item.word, item.layer2Text);
+          item.layer1Img = dataUrl;
+          item.layer2Img = dataUrl;
+          successCount++;
+          saveCurrentCourseToStorage();
+          if (currentCharIdx === i) renderLearnView();
+        } catch (err) {
+          console.warn(`生字「${item.char}」AI 繪圖略過:`, err);
+        }
+      }
+
+      counterTxt.textContent = `${lessonData.length} / ${lessonData.length}`;
+      bar.style.width = "100%";
+      saveCurrentCourseToStorage();
+      renderLearnView();
+      if (!document.getElementById("view-quiz").classList.contains("hidden")) initQuiz();
+
+      setAutoGenButtonsDisabled(false);
+      closeAutoGenModal();
+      SoundFX.success();
+      showToast(`🎉 完成！「${currentCourseTitle}」已繪製 ${successCount} 張專屬 AI 繪本插畫！`, 4000);
+    }
+
+    // ==================== 圖片壓縮、拖曳與 Ctrl+V 貼圖 ====================
+    function compressImageDataUrl(dataUrl, maxWidth = 480, quality = 0.82) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxWidth / img.width);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    function readFileAsCompressedDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith("image/")) {
+          reject(new Error("非圖片檔案"));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const compressed = await compressImageDataUrl(e.target.result, 480, 0.82);
+          resolve(compressed);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function setupMainDropzone() {
+      const dz = document.getElementById("main-image-dropzone");
+      if (!dz) return;
+      dz.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dz.classList.add("drop-zone-active");
+      });
+      dz.addEventListener("dragleave", () => dz.classList.remove("drop-zone-active"));
+      dz.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dz.classList.remove("drop-zone-active");
+        const file = e.dataTransfer?.files?.[0];
+        if (file) {
+          const dataUrl = await readFileAsCompressedDataUrl(file);
+          applyCustomImageToCurrent(dataUrl);
+          SoundFX.success();
+          showToast("✅ 已拖曳放入插畫並自動存檔！");
+        }
+      });
+    }
+
+    async function handleManualImageUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const dataUrl = await readFileAsCompressedDataUrl(file);
+      applyCustomImageToCurrent(dataUrl);
+      SoundFX.success();
+      showToast("✅ 已更新插畫並自動存檔！");
+      event.target.value = "";
+    }
+
+    function applyCustomImageToCurrent(dataUrl) {
+      const item = lessonData[currentCharIdx];
+      item.layer1Img = dataUrl;
+      item.layer2Img = dataUrl;
+      saveCurrentCourseToStorage();
+      renderLearnView();
+    }
+
+    window.addEventListener("paste", async (e) => {
+      const items = e.clipboardData?.items || [];
+      let imageBlob = null;
+      for (const it of items) {
+        if (it.type.indexOf("image") !== -1) {
+          imageBlob = it.getAsFile();
+          break;
+        }
+      }
+      if (!imageBlob) return;
+
+      const dataUrl = await readFileAsCompressedDataUrl(imageBlob);
+      const editorModal = document.getElementById("modal-batch-editor");
+
+      if (!editorModal.classList.contains("hidden")) {
+        if (draftRows[focusedEditorRowIdx]) {
+          draftRows[focusedEditorRowIdx].layer1Img = dataUrl;
+          draftRows[focusedEditorRowIdx].layer2Img = dataUrl;
+          renderEditorRows();
+          SoundFX.success();
+          showToast(`📋 已將圖片貼入「${draftRows[focusedEditorRowIdx].char || "第" + (focusedEditorRowIdx + 1) + "列"}」！`);
+        }
+      } else if (!document.getElementById("view-learn").classList.contains("hidden") && document.getElementById("modal-auto-gen").classList.contains("hidden")) {
+        applyCustomImageToCurrent(dataUrl);
+        SoundFX.success();
+        showToast(`📋 已直接貼上「${lessonData[currentCharIdx].char}」的圖片並存檔！`);
+      }
+    });
+
+    // ==================== 批次微調編輯器 ====================
+    function openBatchEditor() {
+      SoundFX.click();
+      document.getElementById("editor-course-title").value = currentCourseTitle;
+      draftRows = JSON.parse(JSON.stringify(lessonData));
+      focusedEditorRowIdx = 0;
+      renderEditorRows();
+      document.getElementById("modal-batch-editor").classList.remove("hidden");
+    }
+
+    function closeBatchEditor() {
+      document.getElementById("modal-batch-editor").classList.add("hidden");
+    }
+
+    function addSingleEmptyRow() {
+      const svg = makeCleanPlaceholderSvg("字");
+      draftRows.push({
+        char: "",
+        word: "",
+        layer1Text: "",
+        layer2Text: "",
+        layer1Img: svg,
+        layer2Img: svg
+      });
+      focusedEditorRowIdx = draftRows.length - 1;
+      renderEditorRows();
+    }
+
+    function removeEditorRow(idx) {
+      draftRows.splice(idx, 1);
+      if (focusedEditorRowIdx >= draftRows.length) focusedEditorRowIdx = Math.max(0, draftRows.length - 1);
+      renderEditorRows();
+    }
+
+    async function regenerateSingleDraftRowAi(idx) {
+      const row = draftRows[idx];
+      if (!row || !row.char) {
+        showToast("⚠️ 請先輸入該列的生字與語詞！");
+        return;
+      }
+      showToast(`🎨 正在為「${row.char}（${row.word || row.char}）」生成 AI 繪本插畫...`, 4000);
+      try {
+        const dataUrl = await generateFreeAiStorybookImage(row.char, row.word || row.char, row.layer2Text);
+        row.layer1Img = dataUrl;
+        row.layer2Img = dataUrl;
+        renderEditorRows();
+        SoundFX.success();
+        showToast(`✅ 「${row.char}」AI 插畫已更新！`);
+      } catch (err) {
+        SoundFX.error();
+        showToast(`⚠️ ${err.message}`);
+      }
+    }
+
+    function renderEditorRows() {
+      const tbody = document.getElementById("editor-rows-tbody");
+      tbody.innerHTML = "";
+      draftRows.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        tr.className = idx === focusedEditorRowIdx ? "bg-amber-50/70" : "hover:bg-slate-50";
+        tr.onclick = () => { focusedEditorRowIdx = idx; };
+
+        tr.innerHTML = `
+          <td class="p-2.5 text-center">
+            <input type="text" maxlength="1" value="${row.char}" onchange="updateDraftField(${idx}, 'char', this.value)"
+              class="w-12 h-12 text-center text-2xl font-black text-rose-600 rounded-xl border-2 border-amber-300 bg-white focus:outline-none focus:border-rose-500" />
+          </td>
+          <td class="p-2.5">
+            <input type="text" value="${row.word}" onchange="updateDraftField(${idx}, 'word', this.value)"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold text-slate-800 focus:outline-none focus:border-indigo-500" />
+          </td>
+          <td class="p-2.5">
+            <input type="text" value="${row.layer2Text}" onchange="updateDraftField(${idx}, 'layer2Text', this.value)"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-indigo-500" />
+          </td>
+          <td class="p-2.5">
+            <div class="flex items-center gap-2">
+              <div id="row-dz-${idx}" onclick="triggerRowFileUpload(${idx})" title="點擊選圖、拖曳圖片至此，或點選本列後按 Ctrl+V 貼上"
+                class="h-20 flex-1 rounded-xl border-2 border-dashed border-amber-300 bg-white overflow-hidden flex items-center justify-center cursor-pointer relative group hover:border-indigo-500 transition">
+                <img src="${row.layer1Img}" class="w-full h-full object-contain p-1" />
+              </div>
+              <button type="button" onclick="event.stopPropagation(); regenerateSingleDraftRowAi(${idx})" title="用 AI 重新繪製這張插畫"
+                class="px-2.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-black shrink-0">
+                🎨<br/>AI生圖
+              </button>
+            </div>
+          </td>
+          <td class="p-2.5 text-center">
+            <button type="button" onclick="removeEditorRow(${idx})" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        const dz = document.getElementById(`row-dz-${idx}`);
+        dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drop-zone-active"); });
+        dz.addEventListener("dragleave", () => dz.classList.remove("drop-zone-active"));
+        dz.addEventListener("drop", async (e) => {
+          e.preventDefault();
+          dz.classList.remove("drop-zone-active");
+          const file = e.dataTransfer?.files?.[0];
+          if (file) {
+            const dataUrl = await readFileAsCompressedDataUrl(file);
+            draftRows[idx].layer1Img = dataUrl;
+            draftRows[idx].layer2Img = dataUrl;
+            renderEditorRows();
+            SoundFX.success();
+          }
+        });
+      });
+    }
+
+    function updateDraftField(idx, field, val) {
+      const clean = val.trim();
+      draftRows[idx][field] = clean;
+      if (field === "char" || field === "word") {
+        const c = draftRows[idx].char;
+        const w = draftRows[idx].word;
+        draftRows[idx].layer1Text = (w && w.length > 1) ? `${c}，${w}的${c}` : c;
+      }
+    }
+
+    function triggerRowFileUpload(idx) {
+      targetRowUploadIdx = idx;
+      focusedEditorRowIdx = idx;
+      document.getElementById("row-img-file-input").click();
+    }
+
+    async function handleRowFileSelected(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const dataUrl = await readFileAsCompressedDataUrl(file);
+      if (draftRows[targetRowUploadIdx]) {
+        draftRows[targetRowUploadIdx].layer1Img = dataUrl;
+        draftRows[targetRowUploadIdx].layer2Img = dataUrl;
+        renderEditorRows();
+        SoundFX.success();
+      }
+      event.target.value = "";
+    }
+
+    function saveBatchEditor() {
+      const newTitle = document.getElementById("editor-course-title").value.trim() || "自訂識字課程";
+      const validRows = draftRows.filter(r => r.char && /[\u4e00-\u9fa5]/.test(r.char)).map(r => {
+        const word = r.word || r.char;
+        return {
+          char: r.char,
+          word: word,
+          layer1Text: (word && word.length > 1) ? `${r.char}，${word}的${r.char}` : `${r.char}`,
+          layer2Text: r.layer2Text || `我們一起學習「${word}」。`,
+          layer1Img: r.layer1Img,
+          layer2Img: r.layer2Img || r.layer1Img
+        };
+      });
+
+      if (validRows.length === 0) {
+        showToast("⚠️ 請至少保留一個中文生字！");
+        return;
+      }
+
+      currentCourseTitle = newTitle;
+      lessonData = validRows;
+      currentCharIdx = 0;
+      currentLayer = 1;
+      saveCurrentCourseToStorage();
+      closeBatchEditor();
+      renderLearnView();
+      if (!document.getElementById("view-quiz").classList.contains("hidden")) initQuiz();
+      SoundFX.success();
+      showToast(`✅ 「${currentCourseTitle}」已儲存並更新！`);
+    }
+
+    // ==================== 三層階梯識字渲染 ====================
+    function switchMode(mode) {
+      SoundFX.click();
+      const learnView = document.getElementById("view-learn");
+      const quizView = document.getElementById("view-quiz");
+      const tabLearn = document.getElementById("tab-learn");
+      const tabQuiz = document.getElementById("tab-quiz");
+
+      if (mode === "learn") {
+        learnView.classList.remove("hidden");
+        quizView.classList.add("hidden");
+        tabLearn.className = "px-3 py-1.5 rounded-lg text-sm font-black bg-amber-500 text-white shadow-sm transition";
+        tabQuiz.className = "px-3 py-1.5 rounded-lg text-sm font-bold text-amber-900 hover:bg-amber-200/60 transition";
+        renderLearnView();
+      } else {
+        learnView.classList.add("hidden");
+        quizView.classList.remove("hidden");
+        tabQuiz.className = "px-3 py-1.5 rounded-lg text-sm font-black bg-amber-500 text-white shadow-sm transition";
+        tabLearn.className = "px-3 py-1.5 rounded-lg text-sm font-bold text-amber-900 hover:bg-amber-200/60 transition";
+        quizStage = 1;
+        initQuiz();
+      }
+    }
+
+    function selectChar(idx) {
+      SoundFX.click();
+      currentCharIdx = idx;
+      renderLearnView();
+    }
+
+    function switchLayer(layer) {
+      SoundFX.click();
+      currentLayer = layer;
+      renderLearnView();
+    }
+
+    function renderLearnView() {
+      if (!lessonData || lessonData.length === 0) return;
+      if (currentCharIdx >= lessonData.length) currentCharIdx = 0;
+
+      document.getElementById("course-badge").textContent = currentCourseTitle;
+
+      const bar = document.getElementById("char-selector-bar");
+      bar.innerHTML = "";
+      lessonData.forEach((item, idx) => {
+        const btn = document.createElement("button");
+        const active = idx === currentCharIdx;
+        btn.className = active
+          ? "w-11 h-11 rounded-2xl bg-amber-500 text-white font-black text-xl shadow-md scale-105 transition"
+          : "w-11 h-11 rounded-2xl bg-amber-50 hover:bg-amber-100 text-slate-800 border-2 border-amber-200 font-black text-xl transition";
+        btn.textContent = item.char;
+        btn.onclick = () => selectChar(idx);
+        bar.appendChild(btn);
+      });
+
+      [1, 2, 3].forEach(l => {
+        const b = document.getElementById(`layer-btn-${l}`);
+        if (l === currentLayer) {
+          b.className = "px-3.5 py-2 rounded-xl text-sm font-black bg-sky-500 text-white shadow-sm transition";
+        } else {
+          b.className = "px-3.5 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200/70 transition";
+        }
+      });
+
+      const current = lessonData[currentCharIdx];
+      const card12 = document.getElementById("layer-1-2-card");
+      const card3 = document.getElementById("layer-3-card");
+      const nextBtn = document.getElementById("btn-next-step");
+
+      if (currentLayer === 1 || currentLayer === 2) {
+        card12.classList.remove("hidden");
+        card3.classList.add("hidden");
+
+        document.getElementById("progress-badge").textContent = `進度：${currentCharIdx + 1} / ${lessonData.length}`;
+        document.getElementById("layer-tag").textContent =
+          currentLayer === 1 ? "📚 第 1 層：認識生字與代表語詞" : "💬 第 2 層：語詞與課文情境造句";
+
+        const rawSentence = currentLayer === 1 ? current.layer1Text : current.layer2Text;
+        renderClickableSentence(rawSentence, current.char);
+
+        const imgEl = document.getElementById("illustration-img");
+        imgEl.src = currentLayer === 1 ? current.layer1Img : (current.layer2Img || current.layer1Img);
+
+        nextBtn.textContent = currentLayer === 1
+          ? "進入第 2 層：語詞與造句 ➡️"
+          : "進入第 3 層：筆順與手寫 ➡️";
+      } else {
+        card12.classList.add("hidden");
+        card3.classList.remove("hidden");
+        document.getElementById("writer-char-title").textContent = current.char;
+        document.getElementById("stroke-quiz-feedback").textContent = "";
+        initHanziWriters(current.char);
+
+        nextBtn.textContent = currentCharIdx < lessonData.length - 1
+          ? `學習下一個字（${lessonData[currentCharIdx + 1].char}）➡️`
+          : "前往雙階配對大挑戰 🧩";
+      }
+    }
+
+    function renderClickableSentence(sentence, targetChar) {
+      const container = document.getElementById("sentence-display");
+      container.innerHTML = "";
+      for (const ch of sentence) {
+        const span = document.createElement("span");
+        span.textContent = ch;
+        if (/[\u4e00-\u9fa5]/.test(ch)) {
+          span.className = "clickable-char" + (ch === targetChar ? " target-char" : "");
+          span.title = `點擊聽「${ch}」發音`;
+          span.onclick = () => speakText(ch);
+        }
+        container.appendChild(span);
+      }
+    }
+
+    function prevStep() {
+      SoundFX.click();
+      if (currentLayer > 1) {
+        currentLayer--;
+        renderLearnView();
+      } else if (currentCharIdx > 0) {
+        currentCharIdx--;
+        currentLayer = 3;
+        renderLearnView();
+      }
+    }
+
+    function nextStep() {
+      SoundFX.click();
+      if (currentLayer < 3) {
+        currentLayer++;
+        renderLearnView();
+      } else if (currentCharIdx < lessonData.length - 1) {
+        currentCharIdx++;
+        currentLayer = 1;
+        renderLearnView();
+      } else {
+        switchMode("quiz");
+      }
+    }
+
+    // ==================== 語音朗讀與錄音 ====================
+    function speakText(text) {
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "zh-TW";
+        utter.rate = 0.85;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    }
+
+    function speakCurrentSentence() {
+      const current = lessonData[currentCharIdx];
+      const text = currentLayer === 1 ? current.layer1Text : current.layer2Text;
+      speakText(text);
+    }
+
+    async function toggleRecording() {
+      const label = document.getElementById("record-btn-label");
+      const btn = document.getElementById("btn-record");
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: "audio/webm" });
+            const url = URL.createObjectURL(blob);
+            document.getElementById("recorded-audio").src = url;
+            document.getElementById("audio-playback-bar").classList.remove("hidden");
+            stream.getTracks().forEach(t => t.stop());
+            SoundFX.success();
+          };
+          mediaRecorder.start();
+          isRecording = true;
+          label.textContent = "停止錄音";
+          btn.classList.add("animate-pulse");
+        } catch (err) {
+          showToast("⚠️ 無法存取麥克風，請確認瀏覽器已允許權限");
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        label.textContent = "自己唸唸看";
+        btn.classList.remove("animate-pulse");
+      }
+    }
+
+    // ==================== 繁體筆順 HanziWriter ====================
+    function initHanziWriters(char) {
+      const demoBox = document.getElementById("hanzi-demo-target");
+      const quizBox = document.getElementById("hanzi-quiz-target");
+      demoBox.innerHTML = "";
+      quizBox.innerHTML = "";
+
+      if (typeof HanziWriter === "undefined") {
+        demoBox.innerHTML = `<div class="w-[220px] h-[220px] flex items-center justify-center text-8xl font-black text-slate-800">${char}</div>`;
+        quizBox.innerHTML = `<div class="w-[220px] h-[220px] flex items-center justify-center text-8xl font-black text-slate-300">${char}</div>`;
+        return;
+      }
+
+      demoWriter = HanziWriter.create("hanzi-demo-target", char, {
+        width: 220,
+        height: 220,
+        padding: 12,
+        strokeColor: "#E11D48",
+        radicalColor: "#2563EB",
+        strokeAnimationSpeed: 1,
+        delayBetweenStrokes: 260
+      });
+      demoWriter.loopCharacterAnimation();
+
+      quizWriter = HanziWriter.create("hanzi-quiz-target", char, {
+        width: 220,
+        height: 220,
+        padding: 12,
+        showCharacter: false,
+        showOutline: true,
+        strokeColor: "#0284C7",
+        highlightColor: "#F59E0B"
+      });
+      startStrokeQuiz();
+    }
+
+    function animateStrokeOrder() {
+      SoundFX.click();
+      if (demoWriter) demoWriter.animateCharacter();
+    }
+
+    function startStrokeQuiz() {
+      if (!quizWriter) return;
+      document.getElementById("stroke-quiz-feedback").textContent = "請從第一筆開始寫...";
+      quizWriter.quiz({
+        onCorrectStroke: () => SoundFX.playTone(620, "sine", 0.08, 0.1),
+        onMistake: () => SoundFX.playTone(240, "sawtooth", 0.1, 0.1),
+        onComplete: (summary) => {
+          SoundFX.success();
+          document.getElementById("stroke-quiz-feedback").textContent = `🎉 太棒了！寫字完成（錯誤 ${summary.totalMistakes} 筆）`;
+        }
+      });
+    }
+
+    // ==================== 模式二：雙階配對測驗 ====================
+    function setQuizStage(stage) {
+      SoundFX.click();
+      quizStage = stage;
+      initQuiz();
+      if (stage === 2) {
+        speakFeedback("進入第二關，褪圖挑戰！請看語詞和句子找出正確的生字", 150);
+      }
+    }
+
+    function initQuiz() {
+      selectedQuizChar = null;
+      matchedChars = new Set();
+      wrongCardChar = null;
+      shuffledQuizCards = [...lessonData].sort(() => Math.random() - 0.5);
+
+      const s1Btn = document.getElementById("quiz-stage-btn-1");
+      const s2Btn = document.getElementById("quiz-stage-btn-2");
+      const titleEl = document.getElementById("quiz-main-title");
+      const subEl = document.getElementById("quiz-main-subtitle");
+      const step2El = document.getElementById("quiz-step2-label");
+
+      if (quizStage === 1) {
+        s1Btn.className = "px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black bg-sky-600 text-white shadow-xs transition";
+        s2Btn.className = "px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-200 transition";
+        titleEl.textContent = "🧩 第 1 關：圖文配對（初階有圖提示）";
+        subEl.textContent = "先點選上方一個生字，再點擊下方對應的繪本插畫與挖空語詞卡！";
+        step2El.textContent = "第二步：請點擊與該生字相符的插畫與語詞卡";
+        updateQuizBanner("👆 第 1 關（有圖提示）：請先點選一個生字，再找出對應的插畫卡片！", "info", false, false);
+      } else {
+        s2Btn.className = "px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black bg-purple-600 text-white shadow-xs transition";
+        s1Btn.className = "px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-200 transition";
+        titleEl.textContent = "🔥 第 2 關：褪圖挑戰（純文字語境辨字）";
+        subEl.textContent = "圖片已隱藏！請不靠圖片猜測，直接讀懂語詞與造句，選出正確的生字配對！";
+        step2El.textContent = "第二步：不看圖片，請點擊與該生字相符的語詞與造句卡";
+        updateQuizBanner("🔥 第 2 關（已褪去圖片）：請先點選一個生字，再讀一讀句子找出正確語詞卡！", "purple", false, false);
+      }
+
+      renderQuizView();
+    }
+
+    function updateQuizBanner(text, style = "info", showRetryBtn = false, showAdvanceBtn = false) {
+      const banner = document.getElementById("quiz-feedback-banner");
+      const textEl = document.getElementById("quiz-feedback-text");
+      const retryBtn = document.getElementById("btn-retry-current");
+      const advBtn = document.getElementById("btn-advance-stage2");
+
+      banner.className = "rounded-2xl px-5 py-3.5 font-black text-base flex flex-wrap items-center justify-between gap-3 transition border-2 ";
+      if (style === "success") {
+        banner.className += "bg-emerald-50 border-emerald-400 text-emerald-800";
+      } else if (style === "error") {
+        banner.className += "bg-rose-50 border-rose-400 text-rose-800";
+      } else if (style === "purple") {
+        banner.className += "bg-purple-50 border-purple-300 text-purple-900";
+      } else {
+        banner.className += "bg-indigo-50 border-indigo-200 text-indigo-900";
+      }
+
+      textEl.textContent = text;
+      retryBtn.classList.toggle("hidden", !showRetryBtn);
+      advBtn.classList.toggle("hidden", !showAdvanceBtn);
+    }
+
+    function retryWrongSelection() {
+      SoundFX.click();
+      wrongCardChar = null;
+      if (selectedQuizChar) {
+        const targetHint = quizStage === 1 ? "插畫卡片" : "語詞造句卡";
+        updateQuizBanner(`👉 請再幫「${selectedQuizChar}」找找看正確的${targetHint}喔！`, quizStage === 1 ? "info" : "purple", false, false);
+        speakFeedback(`請再幫${selectedQuizChar}找找看`, 50);
+      } else {
+        updateQuizBanner("👆 請先點選一個生字，再點擊對應的卡片！", "info", false, false);
+      }
+      renderQuizView();
+    }
+
+    function renderQuizView() {
+      document.getElementById("quiz-score-badge").textContent = `已完成：${matchedChars.size} / ${lessonData.length}`;
+
+      const pool = document.getElementById("quiz-char-pool");
+      pool.innerHTML = "";
+      lessonData.forEach(item => {
+        const isMatched = matchedChars.has(item.char);
+        const isSelected = selectedQuizChar === item.char;
+        const btn = document.createElement("button");
+        btn.disabled = isMatched;
+        if (isMatched) {
+          btn.className = "w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border-2 border-emerald-300 font-black text-xl opacity-60 cursor-default";
+          btn.textContent = "✓";
+        } else if (isSelected) {
+          const activeBg = quizStage === 2 ? "bg-purple-600 border-purple-700" : "bg-indigo-600 border-indigo-700";
+          btn.className = `w-12 h-12 rounded-2xl ${activeBg} text-white border-2 font-black text-xl shadow-lg scale-110 transition`;
+          btn.textContent = item.char;
+        } else {
+          btn.className = "w-12 h-12 rounded-2xl bg-white hover:bg-indigo-50 text-slate-800 border-2 border-indigo-200 font-black text-xl shadow-xs transition";
+          btn.textContent = item.char;
+        }
+        btn.onclick = () => {
+          SoundFX.click();
+          selectedQuizChar = item.char;
+          wrongCardChar = null;
+          speakText(item.char);
+          const hint = quizStage === 1 ? "插畫卡片" : "語詞與造句卡片";
+          updateQuizBanner(`👉 已選取生字「${item.char}」，請點擊下方對應的${hint}！`, quizStage === 1 ? "info" : "purple", false, false);
+          renderQuizView();
+        };
+        pool.appendChild(btn);
+      });
+
+      const grid = document.getElementById("quiz-cards-grid");
+      grid.innerHTML = "";
+      shuffledQuizCards.forEach(item => {
+        const isMatched = matchedChars.has(item.char);
+        const isWrong = wrongCardChar === item.char;
+        const maskedWord = item.word.replaceAll(item.char, "＿＿");
+        const maskedSentence = item.layer2Text.replaceAll(item.char, "＿＿");
+
+        const card = document.createElement("div");
+        if (isMatched) {
+          card.className = "rounded-3xl border-2 border-emerald-400 bg-emerald-50/70 p-4 flex flex-col justify-between space-y-3 opacity-90";
+        } else if (isWrong) {
+          card.className = "rounded-3xl border-2 border-rose-500 bg-rose-50 p-4 flex flex-col justify-between space-y-3 shadow-md cursor-pointer animate-shake";
+        } else {
+          const hoverBorder = quizStage === 2 ? "hover:border-purple-500 border-purple-200" : "hover:border-indigo-400 border-amber-200";
+          card.className = `rounded-3xl border-2 ${hoverBorder} bg-white p-4 flex flex-col justify-between space-y-3 shadow-sm cursor-pointer transition hover:-translate-y-0.5`;
+        }
+
+        const audioBtnHtml = isMatched
+          ? `<button type="button" class="w-8 h-8 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0" onclick="event.stopPropagation(); speakText('${item.word.replace(/'/g, "")}')">🔊</button>`
+          : `<button type="button" title="答對後才能聽完整語詞喔！" class="w-8 h-8 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center cursor-not-allowed shrink-0" onclick="event.stopPropagation(); showToast('🔒 答對這題後就會唸出完整語詞喔！')">🔒</button>`;
+
+        if (quizStage === 1) {
+          card.innerHTML = `
+            <div class="h-40 rounded-2xl bg-amber-50/50 border border-amber-100 overflow-hidden flex items-center justify-center relative">
+              <img src="${item.layer2Img || item.layer1Img}" alt="測驗插畫" class="w-full h-full object-contain p-1.5" />
+              ${isMatched ? '<span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-xs font-black shadow">✓ 答對了</span>' : ''}
+              ${isWrong ? '<span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-xs font-black shadow">✕ 再想想</span>' : ''}
+            </div>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-3 py-1 rounded-xl ${isMatched ? 'bg-emerald-100 text-emerald-900' : 'bg-indigo-50 text-indigo-900'} font-black text-sm">
+                  語詞：${isMatched ? item.word : maskedWord}
+                </span>
+                ${audioBtnHtml}
+              </div>
+              <p class="text-xs text-slate-600 font-medium leading-relaxed">
+                ${isMatched ? item.layer2Text : maskedSentence}
+              </p>
+            </div>
+          `;
+        } else {
+          card.innerHTML = `
+            <div class="space-y-3 py-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-3.5 py-1.5 rounded-xl ${isMatched ? 'bg-emerald-100 text-emerald-900' : 'bg-purple-100 text-purple-900'} font-black text-lg tracking-wider">
+                  ${isMatched ? item.word : maskedWord}
+                </span>
+                <div class="flex items-center gap-1.5">
+                  ${isMatched ? '<span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-xs font-black">✓ 答對</span>' : ''}
+                  ${isWrong ? '<span class="px-2 py-0.5 rounded-full bg-rose-600 text-white text-xs font-black">✕ 再想想</span>' : ''}
+                  ${audioBtnHtml}
+                </div>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 min-h-[84px] flex items-center">
+                <p class="text-base sm:text-lg text-slate-800 font-bold leading-relaxed">
+                  ${isMatched ? item.layer2Text : maskedSentence}
+                </p>
+              </div>
+            </div>
+          `;
+        }
+
+        if (!isMatched) {
+          card.onclick = () => handleQuizCardClick(item.char);
+        }
+        grid.appendChild(card);
+      });
+    }
+
+    function handleQuizCardClick(targetChar) {
+      if (!selectedQuizChar) {
+        SoundFX.click();
+        updateQuizBanner("👆 請先在上方點選一個生字，再來選卡片喔！", quizStage === 1 ? "info" : "purple", false, false);
+        speakFeedback("請先點選一個生字", 50);
+        return;
+      }
+
+      if (selectedQuizChar === targetChar) {
+        SoundFX.success();
+        matchedChars.add(targetChar);
+        const solvedWord = lessonData.find(i => i.char === targetChar)?.word || targetChar;
+        selectedQuizChar = null;
+        wrongCardChar = null;
+        renderQuizView();
+
+        if (matchedChars.size === lessonData.length) {
+          if (quizStage === 1) {
+            updateQuizBanner("🎉 恭喜答對了！第 1 關圖文配對全過關！準備好挑戰不看圖片了嗎？", "success", false, true);
+            speakFeedback("恭喜答對了！第一關全過關，要不要挑戰第二關褪圖測驗呢？", 350);
+          } else {
+            updateQuizBanner("🏆 太厲害了！不看圖片也全部答對，你已經真正學會這些生字囉！", "success", false, false);
+            speakFeedback("恭喜答對了！不看圖片也全部過關，你真的學會這些生字了！", 350);
+          }
+        } else {
+          updateQuizBanner(`🎉 恭喜答對了！「${solvedWord}」配對成功，請繼續選下一個生字！`, "success", false, false);
+          speakFeedback(`恭喜答對了！${solvedWord}`, 350);
+        }
+      } else {
+        SoundFX.error();
+        wrongCardChar = targetChar;
+        renderQuizView();
+        updateQuizBanner(`❌ 這張不是「${selectedQuizChar}」喔！別氣餒，點「再試一次」或直接選另一張卡片！`, "error", true, false);
+        speakFeedback(`選錯囉，再試一次！請再幫${selectedQuizChar}找找看`, 300);
+      }
+    }
+
+    // ==================== 匯出獨立離線 HTML（含品牌 LOGO） ====================
+    function downloadStandaloneHtml() {
+      SoundFX.click();
+      const payload = JSON.stringify({
+        title: currentCourseTitle,
+        data: lessonData
+      });
+      const base64Data = btoa(unescape(encodeURIComponent(payload)));
+      const currentLogoSrc = document.getElementById("brand-logo-img")?.src || "";
+
+      let fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const startMarker = "/* === LESSON_DATA_START === */";
+      const endMarker = "/* === LESSON_DATA_END === */";
+      const startIdx = fullHtml.indexOf(startMarker);
+      const endIdx = fullHtml.indexOf(endMarker);
+
+      if (startIdx !== -1 && endIdx !== -1) {
+        const replacement = `${startMarker}\n    const EMBEDDED_EXPORT_BASE64 = "${base64Data}";\n    const EMBEDDED_CUSTOM_LOGO = ${JSON.stringify(currentLogoSrc)};\n    let currentCourseTitle = ${JSON.stringify(currentCourseTitle)};\n    let lessonData = [];\n    `;
+        fullHtml = fullHtml.slice(0, startIdx) + replacement + fullHtml.slice(endIdx);
+      }
+
+      const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+      const a = document.createElement("a");
+      const safeName = currentCourseTitle.replace(/[\\/:*?"<>|]/g, "_");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeName}.html`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast(`💾 已匯出「${safeName}.html」！包含有生命的漢字 LOGO 與雙階測驗！`, 3800);
+    }
+
+    // ==================== 匯入已下載的課程檔案還原 ====================
+    function importCourseFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result || "";
+        try {
+          const match = content.match(/const EMBEDDED_EXPORT_BASE64\s*=\s*"([^"]+)"/);
+          if (match && match[1]) {
+            const decoded = JSON.parse(decodeURIComponent(escape(atob(match[1]))));
+            if (decoded && decoded.title && Array.isArray(decoded.data)) {
+              currentCourseTitle = decoded.title;
+              lessonData = decoded.data;
+              currentCharIdx = 0;
+              currentLayer = 1;
+              saveCurrentCourseToStorage();
+              renderLearnView();
+              SoundFX.success();
+              showToast(`📂 已成功匯入「${currentCourseTitle}」！`);
+              return;
+            }
+          }
+          showToast("⚠️ 此檔案中找不到可匯入的課程資料");
+        } catch (err) {
+          showToast("❌ 匯入失敗：檔案格式錯誤");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+      event.target.value = "";
+    }
+  </script>
+</body>
+</html>
