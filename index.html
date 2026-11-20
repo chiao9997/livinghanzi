@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>有生命的漢字小學堂 - 線上互動課程總館</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+    body { font-family: 'Noto Sans TC', sans-serif; background-color: #FFFDF7; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- 品牌頁首 -->
+  <header class="bg-white border-b-2 border-emerald-200 py-6 px-4 shadow-xs">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-800">🌱 有生命的漢字小學堂</h1>
+        <p class="text-sm text-emerald-700 font-bold mt-1">LIVING CHINESE CHARACTERS・三層階梯識字與雙階配對互動教材</p>
+      </div>
+      <span class="px-4 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-black border border-amber-300">
+        全系列互動課程館
+      </span>
+    </div>
+  </header>
+
+  <!-- 課程卡片列表 -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+    <h2 class="text-lg font-black text-slate-700 mb-4">📚 請點選要學習的課程：</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      
+      <!-- 課程卡片範本：每新增一課，複製這一段 <a>...</a> 修改檔名與課名即可 -->
+      <a href="lesson05.html" class="block bg-white rounded-3xl p-5 border-2 border-amber-200 hover:border-emerald-500 hover:shadow-lg transition group">
+        <span class="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black">第五課</span>
+        <h3 class="text-xl font-black text-slate-800 mt-3 group-hover:text-emerald-700">五、飛舞的絲帶</h3>
+        <p class="text-xs text-slate-500 mt-1.5">14 個生字・三層識字＋褪圖挑戰</p>
+      </a>
+
+      <a href="lesson06.html" class="block bg-white rounded-3xl p-5 border-2 border-amber-200 hover:border-emerald-500 hover:shadow-lg transition group">
+        <span class="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black">第六課</span>
+        <h3 class="text-xl font-black text-slate-800 mt-3 group-hover:text-emerald-700">六、小女生</h3>
+        <p class="text-xs text-slate-500 mt-1.5">6 個生字・三層識字＋褪圖挑戰</p>
+      </a>
+
+    </div>
+  </main>
+
+  <footer class="py-5 text-center text-xs text-slate-400">
+    © 有生命的漢字 LIVING CHINESE CHARACTERS 教學團隊製作
+  </footer>
+</body>
+</html>
